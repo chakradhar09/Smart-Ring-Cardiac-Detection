@@ -1,0 +1,156 @@
+services:
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.2.7
+    command:
+      - redpanda
+      - start
+      - --overprovisioned
+      - --smp=1
+      - --memory=1G
+      - --reserve-memory=0M
+      - --check=false
+      - --node-id=0
+      - --kafka-addr=PLAINTEXT://0.0.0.0:9092,OUTSIDE://0.0.0.0:19092
+      - --advertise-kafka-addr=PLAINTEXT://redpanda:9092,OUTSIDE://localhost:19092
+    ports:
+      - "${REDPANDA_HOST_PORT:-19092}:19092"
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster info --brokers=redpanda:9092 >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_HOST_PORT:-16379}:6379"
+
+  timescaledb:
+    image: timescale/timescaledb:2.14.2-pg16
+    environment:
+      POSTGRES_DB: cardioring
+      POSTGRES_USER: ring
+      POSTGRES_PASSWORD: ringpass
+    ports:
+      - "${TIMESCALE_HOST_PORT:-15432}:5432"
+    volumes:
+      - ./infra/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - tsdb_data:/var/lib/postgresql/data
+
+  db-migrator:
+    image: postgres:16-alpine
+    environment:
+      PGPASSWORD: ringpass
+    volumes:
+      - ./infra/init.sql:/init.sql:ro
+    command: >
+      sh -c "until pg_isready -h timescaledb -p 5432 -U ring -d cardioring; do echo 'waiting for database'; sleep 1; done;
+      psql -v ON_ERROR_STOP=1 -h timescaledb -U ring -d cardioring -f /init.sql"
+    depends_on:
+      timescaledb:
+        condition: service_started
+    restart: "no"
+
+  ingestion-service:
+    build:
+      context: ./services/ingestion-service
+    environment:
+      PORT: 8080
+      KAFKA_BROKERS: redpanda:9092
+      KAFKA_TOPIC_RAW: biosignal.raw
+    depends_on:
+      redpanda:
+        condition: service_healthy
+
+  ai-analysis-engine:
+    build:
+      context: ./services/ai-analysis-engine
+    environment:
+      KAFKA_BROKERS: redpanda:9092
+      KAFKA_TOPIC_IN: biosignal.raw
+      KAFKA_TOPIC_OUT: biosignal.classified
+      DATABASE_URL: postgresql://ring:ringpass@timescaledb:5432/cardioring
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      db-migrator:
+        condition: service_completed_successfully
+      timescaledb:
+        condition: service_started
+
+  anomaly-engine:
+    build:
+      context: ./services/anomaly-engine
+    environment:
+      KAFKA_BROKERS: redpanda:9092
+      KAFKA_TOPIC_IN: biosignal.classified
+      KAFKA_TOPIC_OUT: cardiac.anomaly
+      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: postgresql://ring:ringpass@timescaledb:5432/cardioring
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      db-migrator:
+        condition: service_completed_successfully
+      redis:
+        condition: service_started
+      timescaledb:
+        condition: service_started
+
+  notification-gateway:
+    build:
+      context: ./services/notification-gateway
+    environment:
+      PORT: 8083
+      DATABASE_URL: postgresql://ring:ringpass@timescaledb:5432/cardioring
+    depends_on:
+      db-migrator:
+        condition: service_completed_successfully
+      timescaledb:
+        condition: service_started
+
+  alert-dispatch-service:
+    build:
+      context: ./services/alert-dispatch-service
+    environment:
+      PORT: 8082
+      KAFKA_BROKERS: redpanda:9092
+      KAFKA_TOPIC_IN: cardiac.anomaly
+      NOTIFICATION_GATEWAY_URL: http://notification-gateway:8083
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      notification-gateway:
+        condition: service_started
+
+  api-backend:
+    build:
+      context: ./services/api-backend
+    environment:
+      PORT: 8090
+      DATABASE_URL: postgresql://ring:ringpass@timescaledb:5432/cardioring
+      INGESTION_URL: http://ingestion-service:8080/ingest
+    ports:
+      - "${API_HOST_PORT:-18090}:8090"
+    depends_on:
+      db-migrator:
+        condition: service_completed_successfully
+      timescaledb:
+        condition: service_started
+      ingestion-service:
+        condition: service_started
+
+  edge-simulator:
+    build:
+      context: ./services/edge-simulator
+    environment:
+      INGESTION_URL: http://ingestion-service:8080/ingest
+      PROFILES_FILE: /app/patient_profiles.json
+      STREAM_INTERVAL_MS: ${SIM_STREAM_INTERVAL_MS:-1200}
+      PER_PATIENT_STAGGER_MS: ${SIM_PER_PATIENT_STAGGER_MS:-120}
+    depends_on:
+      ingestion-service:
+        condition: service_started
+
+volumes:
+  tsdb_data:

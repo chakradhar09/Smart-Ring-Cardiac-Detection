@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CardioRing Demo Control Deck</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg: #f4f8ff;
+        --surface: #ffffff;
+        --ink: #09203f;
+        --ink-soft: #446280;
+        --primary: #006bb3;
+        --accent: #ff4e00;
+        --good: #0b8f5a;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Sora", sans-serif;
+        color: var(--ink);
+        background: radial-gradient(circle at 10% 10%, #d7ebff, transparent 45%),
+          radial-gradient(circle at 90% 20%, #ffd8cb, transparent 35%),
+          linear-gradient(160deg, #f4f8ff, #ecf6ff 50%, #f7f9ff);
+      }
+
+      .page {
+        width: min(1040px, 92vw);
+        margin: 0 auto;
+        padding: 40px 0 56px;
+      }
+
+      .headline {
+        display: grid;
+        gap: 10px;
+        margin-bottom: 24px;
+      }
+
+      .kicker {
+        display: inline-block;
+        width: fit-content;
+        padding: 6px 12px;
+        border-radius: 999px;
+        color: white;
+        background: linear-gradient(90deg, var(--primary), #23a0d8);
+        font-size: 12px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(1.8rem, 3vw, 2.9rem);
+        line-height: 1.1;
+      }
+
+      p {
+        margin: 0;
+        color: var(--ink-soft);
+      }
+
+      .grid {
+        margin-top: 24px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 16px;
+      }
+
+      .card {
+        background: var(--surface);
+        border-radius: 18px;
+        padding: 18px;
+        box-shadow: 0 12px 30px rgba(9, 32, 63, 0.09);
+      }
+
+      .card h3 {
+        margin: 0 0 8px;
+      }
+
+      .card p {
+        font-size: 14px;
+      }
+
+      .actions {
+        margin-top: 22px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .btn {
+        border: none;
+        border-radius: 12px;
+        padding: 12px 14px;
+        font-family: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .btn-primary {
+        color: white;
+        background: linear-gradient(120deg, var(--primary), #25a1d5);
+      }
+
+      .btn-accent {
+        color: white;
+        background: linear-gradient(120deg, #e64a19, var(--accent));
+      }
+
+      .status {
+        margin-top: 12px;
+        font-size: 14px;
+        color: var(--good);
+      }
+
+      .links {
+        margin-top: 20px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .links a {
+        text-decoration: none;
+        color: var(--primary);
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="headline">
+        <span class="kicker">Smart Ring Cardiac Platform Demo</span>
+        <h1>Control deck for your full end-to-end architecture walkthrough</h1>
+        <p>
+          This demo runs the entire event-driven pipeline: smart ring stream, AI scoring, anomaly detection,
+          multi-channel dispatch, and clinician-ready dashboards.
+        </p>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <h3>Device + Edge Stream</h3>
+          <p>Edge simulator continuously publishes biosignals through ingestion into Kafka.</p>
+        </article>
+        <article class="card">
+          <h3>AI + Anomaly Pipeline</h3>
+          <p>Independent model scores are fused, baseline-aware severity is computed, and events are persisted.</p>
+        </article>
+        <article class="card">
+          <h3>Emergency Dispatch</h3>
+          <p>Critical and high severity events trigger ring buzz, push, SMS, and mock EMS acknowledgment.</p>
+        </article>
+      </section>
+
+      <section class="actions">
+        <button class="btn btn-primary" id="refresh-metrics">Refresh System Metrics</button>
+        <button class="btn btn-accent" id="trigger-critical">Trigger Critical Event</button>
+      </section>
+      <div class="status" id="status">Ready.</div>
+
+      <section class="links">
+        <a href="/mobile.html">Open Mobile View</a>
+        <a href="/doctor.html">Open Doctor Portal</a>
+      </section>
+    </main>
+
+    <script>
+      const status = document.getElementById("status");
+
+      async function refreshMetrics() {
+        const response = await fetch("/api/system/metrics");
+        const data = await response.json();
+        status.textContent = `Readings: ${data.entities.biosignal_readings}, Events: ${data.entities.cardiac_events}, Alerts: ${data.entities.alerts}, p95 latency: ${data.pipeline_sla.p95_observed_latency_seconds}s`;
+      }
+
+      async function triggerCritical() {
+        status.textContent = "Triggering critical event...";
+        const response = await fetch("/api/demo/trigger-critical", { method: "POST" });
+        const data = await response.json();
+        if (!response.ok) {
+          status.textContent = `Trigger failed: ${data.detail || data.message || "unknown error"}`;
+          return;
+        }
+        status.textContent = `Critical event queued with reading ${data.ingestion_response.reading_id}`;
+      }
+
+      document.getElementById("refresh-metrics").addEventListener("click", () => {
+        refreshMetrics().catch((error) => {
+          status.textContent = `Failed to refresh metrics: ${error.message}`;
+        });
+      });
+
+      document.getElementById("trigger-critical").addEventListener("click", () => {
+        triggerCritical().catch((error) => {
+          status.textContent = `Failed to trigger event: ${error.message}`;
+        });
+      });
+
+      refreshMetrics().catch(() => {
+        status.textContent = "Metrics unavailable yet. Start containers and retry.";
+      });
+    </script>
+  </body>
+</html>

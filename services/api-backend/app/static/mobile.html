@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CardioRing Mobile View</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg: #eef4ff;
+        --surface: #ffffff;
+        --ink: #0f2640;
+        --accent: #008bd0;
+        --critical: #d92d20;
+        --high: #ef6820;
+        --medium: #f79009;
+        --normal: #12b76a;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Sora", sans-serif;
+        background: linear-gradient(160deg, #eef4ff, #f8faff);
+        color: var(--ink);
+      }
+
+      .shell {
+        width: min(430px, 100%);
+        min-height: 100vh;
+        margin: 0 auto;
+        padding: 20px 16px 28px;
+      }
+
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .header h1 {
+        font-size: 1.2rem;
+        margin: 0;
+      }
+
+      .badge {
+        font-size: 12px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: #d0ebff;
+        color: #0b5f96;
+      }
+
+      .cards {
+        margin-top: 14px;
+        display: grid;
+        gap: 10px;
+      }
+
+      .card {
+        background: var(--surface);
+        border-radius: 16px;
+        padding: 14px;
+        box-shadow: 0 8px 24px rgba(15, 38, 64, 0.08);
+      }
+
+      .metric {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+      }
+
+      .metric strong {
+        font-size: 1.5rem;
+      }
+
+      .severity {
+        font-weight: 700;
+      }
+
+      .severity.normal {
+        color: var(--normal);
+      }
+
+      .severity.medium {
+        color: var(--medium);
+      }
+
+      .severity.high {
+        color: var(--high);
+      }
+
+      .severity.critical {
+        color: var(--critical);
+      }
+
+      .events {
+        margin-top: 10px;
+        display: grid;
+        gap: 8px;
+      }
+
+      .event {
+        border-radius: 12px;
+        padding: 10px;
+        background: #f8fbff;
+      }
+
+      .event small {
+        color: #57728f;
+      }
+
+      .actions {
+        margin-top: 14px;
+        display: flex;
+        gap: 10px;
+      }
+
+      button {
+        flex: 1;
+        border: none;
+        border-radius: 12px;
+        padding: 11px;
+        font-family: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .primary {
+        background: linear-gradient(120deg, #0078b7, var(--accent));
+        color: white;
+      }
+
+      .danger {
+        background: linear-gradient(120deg, #c82818, #ef4f28);
+        color: white;
+      }
+
+      a {
+        display: inline-block;
+        margin-top: 12px;
+        color: #0b5f96;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="header">
+        <h1>CardioRing Live Mobile</h1>
+        <span class="badge">user-001</span>
+      </header>
+
+      <section class="cards">
+        <article class="card">
+          <div class="metric"><span>Heart Rate</span><strong id="heart-rate">--</strong></div>
+          <small id="recorded-at">Waiting for data...</small>
+        </article>
+
+        <article class="card">
+          <div class="metric"><span>SpO2</span><strong id="spo2">--</strong></div>
+          <small id="hrv">HRV --</small>
+        </article>
+
+        <article class="card">
+          <div class="metric"><span>Latest Severity</span><strong class="severity normal" id="severity">normal</strong></div>
+          <small id="confidence">Confidence --</small>
+        </article>
+      </section>
+
+      <section class="actions">
+        <button class="primary" id="refresh">Refresh</button>
+        <button class="danger" id="trigger">Trigger Critical</button>
+      </section>
+
+      <section class="events" id="events"></section>
+
+      <a href="/">Back to Control Deck</a>
+    </main>
+
+    <script>
+      const userId = "user-001";
+
+      function severityClass(value) {
+        if (["normal", "medium", "high", "critical"].includes(value)) return value;
+        return "normal";
+      }
+
+      async function loadDashboard() {
+        const dashboardRes = await fetch(`/api/users/${userId}/dashboard`);
+        const dashboard = await dashboardRes.json();
+
+        if (!dashboardRes.ok) {
+          throw new Error(dashboard.detail || "dashboard fetch failed");
+        }
+
+        const eventsRes = await fetch(`/api/users/${userId}/events?limit=5`);
+        const eventsData = await eventsRes.json();
+        const events = eventsData.events || [];
+
+        const reading = dashboard.latest_reading;
+        document.getElementById("heart-rate").textContent = `${Math.round(reading.heart_rate)} bpm`;
+        document.getElementById("spo2").textContent = `${Number(reading.spo2).toFixed(1)}%`;
+        document.getElementById("hrv").textContent = `HRV ${Number(reading.hrv).toFixed(1)} ms`;
+        document.getElementById("recorded-at").textContent = `Recorded: ${new Date(reading.recorded_at).toLocaleTimeString()}`;
+
+        const latestEvent = events[0];
+        const severityElement = document.getElementById("severity");
+        if (latestEvent) {
+          severityElement.textContent = latestEvent.severity;
+          severityElement.className = `severity ${severityClass(latestEvent.severity)}`;
+          document.getElementById("confidence").textContent = `Confidence ${Number(latestEvent.confidence_score).toFixed(3)}`;
+        } else {
+          severityElement.textContent = "normal";
+          severityElement.className = "severity normal";
+          document.getElementById("confidence").textContent = `Confidence ${Number(reading.confidence_score).toFixed(3)}`;
+        }
+
+        const eventContainer = document.getElementById("events");
+        eventContainer.innerHTML = events
+          .map(
+            (event) => `
+              <article class="event">
+                <strong>${event.event_type.toUpperCase()} · ${event.severity}</strong><br />
+                <small>${new Date(event.detected_at).toLocaleString()} · confidence ${Number(event.confidence_score).toFixed(3)}</small>
+              </article>
+            `
+          )
+          .join("");
+
+        if (!events.length) {
+          eventContainer.innerHTML = `<article class="event"><small>No events yet. Stream is healthy.</small></article>`;
+        }
+      }
+
+      async function triggerCritical() {
+        const response = await fetch("/api/demo/trigger-critical", { method: "POST" });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.detail || "failed to trigger critical event");
+        }
+      }
+
+      document.getElementById("refresh").addEventListener("click", () => {
+        loadDashboard().catch((error) => {
+          alert(error.message);
+        });
+      });
+
+      document.getElementById("trigger").addEventListener("click", () => {
+        triggerCritical()
+          .then(() => loadDashboard())
+          .catch((error) => {
+            alert(error.message);
+          });
+      });
+
+      loadDashboard().catch((error) => {
+        alert(error.message);
+      });
+
+      setInterval(() => {
+        loadDashboard().catch(() => {
+          // Keep polling quietly for live demo continuity.
+        });
+      }, 4000);
+    </script>
+  </body>
+</html>

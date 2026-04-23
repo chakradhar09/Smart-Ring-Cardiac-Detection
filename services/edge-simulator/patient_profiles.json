@@ -1,0 +1,114 @@
+[
+  {
+    "user_id": "user-001",
+    "device_id": "device-001",
+    "name": "Priya Nair",
+    "age": 42,
+    "subscription_tier": "premium",
+    "risk_level": "high",
+    "primary_condition": "arrhythmia",
+    "anomaly_every": 16,
+    "home": {
+      "lat": 19.076,
+      "lon": 72.8777
+    }
+  },
+  {
+    "user_id": "user-002",
+    "device_id": "device-002",
+    "name": "Daniel Brooks",
+    "age": 57,
+    "subscription_tier": "premium",
+    "risk_level": "medium",
+    "primary_condition": "hypertension",
+    "anomaly_every": 20,
+    "home": {
+      "lat": 19.1197,
+      "lon": 72.8468
+    }
+  },
+  {
+    "user_id": "user-003",
+    "device_id": "device-003",
+    "name": "Meera Shah",
+    "age": 64,
+    "subscription_tier": "enterprise",
+    "risk_level": "high",
+    "primary_condition": "ischemia",
+    "anomaly_every": 18,
+    "home": {
+      "lat": 19.2183,
+      "lon": 72.9781
+    }
+  },
+  {
+    "user_id": "user-004",
+    "device_id": "device-004",
+    "name": "Carlos Mendes",
+    "age": 48,
+    "subscription_tier": "standard",
+    "risk_level": "medium",
+    "primary_condition": "arrhythmia",
+    "anomaly_every": 24,
+    "home": {
+      "lat": 19.0552,
+      "lon": 72.8305
+    }
+  },
+  {
+    "user_id": "user-005",
+    "device_id": "device-005",
+    "name": "Aisha Khan",
+    "age": 51,
+    "subscription_tier": "premium",
+    "risk_level": "high",
+    "primary_condition": "hypertension",
+    "anomaly_every": 14,
+    "home": {
+      "lat": 19.1712,
+      "lon": 72.9124
+    }
+  },
+  {
+    "user_id": "user-006",
+    "device_id": "device-006",
+    "name": "Noah Reed",
+    "age": 59,
+    "subscription_tier": "enterprise",
+    "risk_level": "high",
+    "primary_condition": "ischemia",
+    "anomaly_every": 22,
+    "home": {
+      "lat": 19.1014,
+      "lon": 72.9011
+    }
+  },
+  {
+    "user_id": "user-007",
+    "device_id": "device-007",
+    "name": "Emma Clarke",
+    "age": 34,
+    "subscription_tier": "standard",
+    "risk_level": "low",
+    "primary_condition": "stable",
+    "anomaly_every": 0,
+    "home": {
+      "lat": 19.1462,
+      "lon": 72.8751
+    }
+  },
+  {
+    "user_id": "user-008",
+    "device_id": "device-008",
+    "name": "Ravi Patel",
+    "age": 39,
+    "subscription_tier": "premium",
+    "risk_level": "low",
+    "primary_condition": "stable",
+    "anomaly_every": 0,
+    "home": {
+      "lat": 19.0836,
+      "lon": 72.8453
+    }
+  }
+]

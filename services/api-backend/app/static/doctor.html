@@ -1,0 +1,976 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CardioRing Doctor Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg: #f3f8fd;
+        --surface: #ffffff;
+        --ink: #0f2942;
+        --soft: #547491;
+        --primary: #006ea3;
+        --line: #d9e8f4;
+        --chip: #edf4fa;
+        --critical: #d92d20;
+        --high: #ef6820;
+        --medium: #f79009;
+        --stable: #12a150;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Sora", sans-serif;
+        color: var(--ink);
+        background: linear-gradient(160deg, #f7fbff 30%, #eef7ff 100%);
+      }
+
+      .page {
+        width: min(1320px, 95vw);
+        margin: 0 auto;
+        padding: 24px 0 36px;
+      }
+
+      .header {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: flex-end;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(1.5rem, 2.4vw, 2.2rem);
+      }
+
+      p {
+        color: var(--soft);
+      }
+
+      .metrics {
+        margin-top: 16px;
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      }
+
+      .metric {
+        background: var(--surface);
+        border-radius: 14px;
+        padding: 14px;
+        box-shadow: 0 8px 24px rgba(15, 41, 66, 0.08);
+        border: 1px solid transparent;
+      }
+
+      .metric small {
+        display: block;
+        color: var(--soft);
+      }
+
+      .metric strong {
+        font-size: 1.25rem;
+      }
+
+      .metric-crit {
+        border-color: #f7c6c2;
+      }
+
+      .metric-high {
+        border-color: #f6d2b7;
+      }
+
+      .metric-med {
+        border-color: #f8dfb0;
+      }
+
+      .metric-stable {
+        border-color: #bfe7ca;
+      }
+
+      .panel {
+        margin-top: 14px;
+        background: var(--surface);
+        border-radius: 14px;
+        padding: 14px;
+        box-shadow: 0 8px 24px rgba(15, 41, 66, 0.08);
+      }
+
+      .panel h3 {
+        margin: 0 0 12px;
+      }
+
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 8px;
+        align-items: center;
+      }
+
+      .toolbar input,
+      .toolbar select {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 9px 10px;
+        font-family: inherit;
+        color: var(--ink);
+        background: #fbfdff;
+      }
+
+      .toolbar input {
+        min-width: 250px;
+        flex: 1;
+      }
+
+      .overview-meta {
+        color: var(--soft);
+        font-size: 13px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .table-scroll {
+        max-height: 260px;
+        overflow-y: auto;
+        border: 1px solid #edf2f8;
+        border-radius: 12px;
+      }
+
+      th,
+      td {
+        text-align: left;
+        padding: 8px;
+        border-bottom: 1px solid #edf2f8;
+        font-size: 14px;
+      }
+
+      tr.patient-row {
+        cursor: pointer;
+        transition: background 140ms ease;
+      }
+
+      tr.patient-row:hover {
+        background: #f8fbfe;
+      }
+
+      tr.patient-row.selected {
+        background: #eaf4fc;
+      }
+
+      tr.event-row {
+        cursor: pointer;
+        transition: background 140ms ease;
+      }
+
+      tr.event-row:hover {
+        background: #f8fbfe;
+      }
+
+      .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: 999px;
+        padding: 4px 9px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: capitalize;
+      }
+
+      .status-critical {
+        color: var(--critical);
+        background: #fde9e7;
+      }
+
+      .status-high {
+        color: var(--high);
+        background: #fff1e9;
+      }
+
+      .status-medium {
+        color: var(--medium);
+        background: #fff7e8;
+      }
+
+      .status-stable {
+        color: var(--stable);
+        background: #eaf8ef;
+      }
+
+      .sev-critical {
+        color: var(--critical);
+        font-weight: 700;
+      }
+
+      .sev-high {
+        color: var(--high);
+        font-weight: 700;
+      }
+
+      .sev-medium {
+        color: var(--medium);
+        font-weight: 700;
+      }
+
+      button {
+        border: none;
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-family: inherit;
+        font-weight: 700;
+        color: white;
+        background: linear-gradient(120deg, #006ea3, #2c9ed0);
+        cursor: pointer;
+      }
+
+      a {
+        display: inline-block;
+        margin-top: 10px;
+        text-decoration: none;
+        color: var(--primary);
+      }
+
+      .layout {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: minmax(480px, 1.05fr) minmax(420px, 1fr);
+        align-items: start;
+      }
+
+      .detail-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        align-items: flex-start;
+      }
+
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .chip {
+        background: var(--chip);
+        color: var(--ink);
+        border-radius: 999px;
+        padding: 4px 10px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .detail-metrics {
+        margin-top: 10px;
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      }
+
+      .detail-metric {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 10px;
+      }
+
+      .detail-metric small {
+        color: var(--soft);
+        display: block;
+      }
+
+      .detail-metric strong {
+        font-size: 1.05rem;
+      }
+
+      .detail-subsection {
+        margin-top: 14px;
+      }
+
+      .detail-subsection h4 {
+        margin: 0 0 8px;
+      }
+
+      .grid-tight {
+        display: grid;
+        gap: 12px;
+      }
+
+      .error {
+        margin-top: 10px;
+        border-radius: 10px;
+        padding: 10px;
+        color: #7a2018;
+        background: #fde7e5;
+        border: 1px solid #f5c0bb;
+        font-size: 14px;
+      }
+
+      .event-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(12, 28, 44, 0.55);
+        display: none;
+        place-items: center;
+        z-index: 50;
+        padding: 16px;
+        pointer-events: none;
+      }
+
+      .event-modal-backdrop.is-open {
+        display: grid;
+        pointer-events: auto;
+      }
+
+      .event-modal-backdrop[hidden] {
+        display: none !important;
+        pointer-events: none !important;
+      }
+
+      .event-modal {
+        width: min(760px, 96vw);
+        max-height: 88vh;
+        overflow-y: auto;
+        background: var(--surface);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 18px 42px rgba(7, 29, 48, 0.28);
+      }
+
+      .event-modal-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .event-modal-head h3 {
+        margin: 0;
+      }
+
+      .modal-close {
+        border: 1px solid var(--line);
+        color: var(--ink);
+        background: #f8fbfe;
+        padding: 7px 10px;
+      }
+
+      .snapshot-grid {
+        margin-top: 12px;
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      }
+
+      .snapshot-item {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 10px;
+      }
+
+      .snapshot-item small {
+        display: block;
+        color: var(--soft);
+      }
+
+      .snapshot-item strong {
+        font-size: 1.02rem;
+      }
+
+      .meta-box {
+        margin-top: 8px;
+        background: #f7fbff;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 10px;
+        font-size: 12px;
+        line-height: 1.4;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      @media (max-width: 1080px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .toolbar input {
+          min-width: 100%;
+        }
+
+        .page {
+          width: min(96vw, 1320px);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="header">
+        <div>
+          <h1>Doctor Portal Live Monitor</h1>
+          <p>Population triage for all patients with one-click deep dive into each health profile.</p>
+        </div>
+        <button id="refresh" aria-label="Refresh doctor dashboard">Refresh Data</button>
+      </section>
+
+      <section class="metrics" id="metrics"></section>
+
+      <div id="error" class="error" hidden></div>
+
+      <section class="layout">
+        <article class="panel">
+          <h3>Patient Overview</h3>
+          <div class="toolbar">
+            <input id="patient-search" type="text" placeholder="Search by name or user id" aria-label="Search patients" />
+            <select id="status-filter" aria-label="Filter by status">
+              <option value="all">All Statuses</option>
+              <option value="critical">Critical</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="stable">Stable</option>
+            </select>
+            <span class="overview-meta" id="overview-meta">Awaiting first refresh...</span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Patient</th>
+                <th>Status</th>
+                <th>HR</th>
+                <th>SpO2</th>
+                <th>Latest Event</th>
+                <th>Alerts 24h</th>
+              </tr>
+            </thead>
+            <tbody id="overview-body"></tbody>
+          </table>
+        </article>
+
+        <article class="panel grid-tight" id="detail-panel">
+          <div class="detail-head">
+            <div>
+              <h3 id="detail-title">Select a patient</h3>
+              <p id="detail-subtitle">Choose a patient from the overview table to inspect detailed status.</p>
+            </div>
+            <span id="detail-status" class="status status-stable">stable</span>
+          </div>
+
+          <div class="chips" id="detail-chips"></div>
+
+          <section class="detail-metrics" id="detail-metrics"></section>
+
+          <section class="detail-subsection">
+            <h4>Event Distribution (24h)</h4>
+            <div class="chips" id="event-distribution"></div>
+          </section>
+
+          <section class="detail-subsection">
+            <h4>Recent Cardiac Events</h4>
+            <div class="table-scroll" aria-label="Scrollable recent cardiac events list">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Type</th>
+                    <th>Severity</th>
+                    <th>Confidence</th>
+                  </tr>
+                </thead>
+                <tbody id="detail-events-body"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="detail-subsection">
+            <h4>Alert Dispatch Log</h4>
+            <div class="table-scroll" aria-label="Scrollable alert dispatch log">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Channel</th>
+                    <th>Status</th>
+                    <th>Recipient</th>
+                  </tr>
+                </thead>
+                <tbody id="detail-alerts-body"></tbody>
+              </table>
+            </div>
+          </section>
+        </article>
+      </section>
+
+      <a href="/">Back to Control Deck</a>
+    </main>
+
+    <div id="event-dialog-backdrop" class="event-modal-backdrop" hidden>
+      <section class="event-modal" role="dialog" aria-modal="true" aria-labelledby="event-dialog-title">
+        <div class="event-modal-head">
+          <h3 id="event-dialog-title">Cardiac Event Snapshot</h3>
+          <button id="event-dialog-close" type="button" class="modal-close" aria-label="Close event details">Close</button>
+        </div>
+        <p id="event-dialog-subtitle" class="overview-meta"></p>
+
+        <section class="snapshot-grid" id="event-snapshot-grid"></section>
+
+        <section class="detail-subsection">
+          <h4>Scores At Trigger</h4>
+          <div class="chips" id="event-scores-chips"></div>
+        </section>
+
+        <section class="detail-subsection">
+          <h4>Baseline At Trigger</h4>
+          <div class="chips" id="event-baseline-chips"></div>
+        </section>
+
+        <section class="detail-subsection">
+          <h4>Telemetry Metadata</h4>
+          <pre id="event-metadata" class="meta-box"></pre>
+        </section>
+      </section>
+    </div>
+
+    <script>
+      const REFRESH_MS = 5000;
+      const state = {
+        overview: null,
+        selectedUserId: null,
+        eventById: {},
+      };
+
+      function statusRank(status) {
+        if (status === "critical") return 4;
+        if (status === "high") return 3;
+        if (status === "medium") return 2;
+        return 1;
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function fmtNumber(value, digits = 1, fallback = "-") {
+        if (value === null || value === undefined || Number.isNaN(Number(value))) {
+          return fallback;
+        }
+        return Number(value).toFixed(digits);
+      }
+
+      function fmtDate(value) {
+        if (!value) {
+          return "-";
+        }
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+          return "-";
+        }
+        return date.toLocaleString();
+      }
+
+      function featureValue(features, key, fallback = "-") {
+        if (!features || typeof features !== "object") {
+          return fallback;
+        }
+        const value = features[key];
+        if (value === null || value === undefined || value === "") {
+          return fallback;
+        }
+        return value;
+      }
+
+      function featureValueAny(features, keys, fallback = "-") {
+        if (!Array.isArray(keys)) {
+          return fallback;
+        }
+        for (const key of keys) {
+          const value = featureValue(features, key, undefined);
+          if (value !== undefined) {
+            return value;
+          }
+        }
+        return fallback;
+      }
+
+      function showError(message) {
+        const node = document.getElementById("error");
+        node.hidden = false;
+        node.textContent = message;
+      }
+
+      function clearError() {
+        const node = document.getElementById("error");
+        node.hidden = true;
+        node.textContent = "";
+      }
+
+      function severityClass(severity) {
+        if (severity === "critical") return "sev-critical";
+        if (severity === "high") return "sev-high";
+        if (severity === "medium") return "sev-medium";
+        return "";
+      }
+
+      function statusClass(status) {
+        if (status === "critical") return "status-critical";
+        if (status === "high") return "status-high";
+        if (status === "medium") return "status-medium";
+        return "status-stable";
+      }
+
+      function renderMetrics(overview) {
+        const container = document.getElementById("metrics");
+        const summary = overview.status_summary || {};
+        const patients = overview.patients || [];
+        const alerts24h = patients.reduce((sum, patient) => sum + (Number(patient.alerts_24h) || 0), 0);
+        const latestTimestamp = patients.reduce((latest, patient) => {
+          const ts = patient.latest_reading_at || patient.latest_event_at;
+          if (!ts) return latest;
+          const ms = new Date(ts).getTime();
+          return ms > latest ? ms : latest;
+        }, 0);
+
+        container.innerHTML = `
+          <article class="metric"><small>Monitored Patients</small><strong>${patients.length}</strong></article>
+          <article class="metric metric-crit"><small>Critical</small><strong>${summary.critical || 0}</strong></article>
+          <article class="metric metric-high"><small>High</small><strong>${summary.high || 0}</strong></article>
+          <article class="metric metric-med"><small>Medium</small><strong>${summary.medium || 0}</strong></article>
+          <article class="metric metric-stable"><small>Stable</small><strong>${summary.stable || 0}</strong></article>
+          <article class="metric"><small>Alerts (24h)</small><strong>${alerts24h}</strong></article>
+          <article class="metric"><small>Last Clinical Update</small><strong>${latestTimestamp ? new Date(latestTimestamp).toLocaleTimeString() : "-"}</strong></article>
+        `;
+      }
+
+      function getFilteredPatients() {
+        const patients = state.overview?.patients || [];
+        const search = document.getElementById("patient-search").value.trim().toLowerCase();
+        const statusFilter = document.getElementById("status-filter").value;
+
+        return patients
+          .filter((patient) => {
+            const haystack = `${patient.name || ""} ${patient.user_id || ""}`.toLowerCase();
+            const statusOk = statusFilter === "all" || (patient.status || "stable") === statusFilter;
+            const searchOk = !search || haystack.includes(search);
+            return statusOk && searchOk;
+          })
+          .sort((a, b) => {
+            const statusDelta = statusRank(b.status) - statusRank(a.status);
+            if (statusDelta !== 0) return statusDelta;
+            return String(a.user_id).localeCompare(String(b.user_id));
+          });
+      }
+
+      function renderOverviewTable() {
+        const rows = getFilteredPatients();
+        const body = document.getElementById("overview-body");
+        const meta = document.getElementById("overview-meta");
+        meta.textContent = `Showing ${rows.length} of ${(state.overview?.patients || []).length} patients`;
+
+        body.innerHTML = rows
+          .map(
+            (patient) => `
+              <tr class="patient-row ${state.selectedUserId === patient.user_id ? "selected" : ""}" data-user-id="${escapeHtml(patient.user_id)}">
+                <td>
+                  <strong>${escapeHtml(patient.name || patient.user_id)}</strong><br />
+                  <small>${escapeHtml(patient.user_id)} · ${escapeHtml(patient.primary_condition || "n/a")}</small>
+                </td>
+                <td><span class="status ${statusClass(patient.status)}">${escapeHtml(patient.status || "stable")}</span></td>
+                <td>${fmtNumber(patient.heart_rate, 0)}</td>
+                <td>${fmtNumber(patient.spo2, 1)}%</td>
+                <td>${escapeHtml(patient.latest_event_type || "none")}</td>
+                <td>${Number(patient.alerts_24h || 0)}</td>
+              </tr>
+            `
+          )
+          .join("");
+
+        if (!rows.length) {
+          body.innerHTML = `<tr><td colspan="6">No patients match this filter.</td></tr>`;
+        }
+
+        body.querySelectorAll("tr.patient-row").forEach((row) => {
+          row.addEventListener("click", () => {
+            const userId = row.getAttribute("data-user-id");
+            if (!userId) return;
+            state.selectedUserId = userId;
+            renderOverviewTable();
+            loadPatientDetail(userId, true).catch((error) => {
+              showError(error.message);
+            });
+          });
+        });
+      }
+
+      function renderDistribution(distribution) {
+        const node = document.getElementById("event-distribution");
+        const list = Array.isArray(distribution) ? distribution : [];
+        if (!list.length) {
+          node.innerHTML = `<span class="chip">No events in last 24h</span>`;
+          return;
+        }
+
+        node.innerHTML = list
+          .map((entry) => `<span class="chip">${escapeHtml(entry.severity)}: ${Number(entry.count || 0)}</span>`)
+          .join("");
+      }
+
+      function renderDetailTables(detail) {
+        const eventsBody = document.getElementById("detail-events-body");
+        const alertsBody = document.getElementById("detail-alerts-body");
+
+        const events = detail.events || [];
+        state.eventById = Object.fromEntries(events.map((event) => [String(event.event_id), event]));
+
+        eventsBody.innerHTML = events
+          .map(
+            (event) => `
+              <tr class="event-row" data-event-id="${escapeHtml(event.event_id || "")}" title="Click to view trigger snapshot">
+                <td>${fmtDate(event.detected_at)}</td>
+                <td>${escapeHtml(event.event_type || "-")}</td>
+                <td class="${severityClass(event.severity)}">${escapeHtml(event.severity || "-")}</td>
+                <td>${fmtNumber(event.confidence_score, 3, "-")}</td>
+              </tr>
+            `
+          )
+          .join("");
+
+        if (!events.length) {
+          eventsBody.innerHTML = `<tr><td colspan="4">No events captured yet.</td></tr>`;
+        }
+
+        eventsBody.querySelectorAll("tr.event-row").forEach((row) => {
+          row.addEventListener("click", () => {
+            const eventId = row.getAttribute("data-event-id") || "";
+            const eventRecord = state.eventById[eventId];
+            if (!eventRecord) {
+              return;
+            }
+            openEventDialog(eventRecord);
+          });
+        });
+
+        const alerts = detail.alerts || [];
+        alertsBody.innerHTML = alerts
+          .map(
+            (alert) => `
+              <tr>
+                <td>${fmtDate(alert.dispatched_at)}</td>
+                <td>${escapeHtml(alert.channel || "-")}</td>
+                <td>${escapeHtml(alert.status || "-")}</td>
+                <td>${escapeHtml(alert.recipient || "-")}</td>
+              </tr>
+            `
+          )
+          .join("");
+
+        if (!alerts.length) {
+          alertsBody.innerHTML = `<tr><td colspan="4">No alerts dispatched yet.</td></tr>`;
+        }
+      }
+
+      function openEventDialog(eventRecord) {
+        const features = eventRecord.raw_features && typeof eventRecord.raw_features === "object" ? eventRecord.raw_features : {};
+        const location = featureValueAny(features, ["location", "coordinates", "geo"], {});
+        const baseline = featureValueAny(features, ["baseline_snapshot", "baseline", "baseline_window"], {});
+        const metadata = featureValueAny(features, ["metadata", "meta"], {});
+        const locationLat = location && typeof location === "object" ? (location.lat ?? location.latitude) : null;
+        const locationLon = location && typeof location === "object" ? (location.lon ?? location.lng ?? location.longitude) : null;
+
+        document.getElementById("event-dialog-subtitle").textContent =
+          `${eventRecord.event_id || "-"} · ${eventRecord.event_type || "-"} · ${eventRecord.severity || "-"} · ${fmtDate(eventRecord.detected_at)}`;
+
+        document.getElementById("event-snapshot-grid").innerHTML = `
+          <article class="snapshot-item"><small>Heart Rate</small><strong>${fmtNumber(featureValueAny(features, ["heart_rate", "hr"], null), 0)} bpm</strong></article>
+          <article class="snapshot-item"><small>SpO2</small><strong>${fmtNumber(featureValueAny(features, ["spo2", "oxygen_saturation"], null), 1)}%</strong></article>
+          <article class="snapshot-item"><small>HRV</small><strong>${fmtNumber(featureValueAny(features, ["hrv"], null), 1)}</strong></article>
+          <article class="snapshot-item"><small>ECG Value</small><strong>${fmtNumber(featureValueAny(features, ["ecg_value", "ecg"], null), 3)}</strong></article>
+          <article class="snapshot-item"><small>PPG Value</small><strong>${fmtNumber(featureValueAny(features, ["ppg_value", "ppg"], null), 3)}</strong></article>
+          <article class="snapshot-item"><small>Confidence</small><strong>${fmtNumber(featureValueAny(features, ["confidence_score", "confidence"], eventRecord.confidence_score), 3)}</strong></article>
+          <article class="snapshot-item"><small>Captured At</small><strong>${fmtDate(featureValueAny(features, ["captured_at", "recorded_at", "timestamp"], null))}</strong></article>
+          <article class="snapshot-item"><small>Classified At</small><strong>${fmtDate(featureValueAny(features, ["classified_at"], eventRecord.detected_at))}</strong></article>
+          <article class="snapshot-item"><small>Location</small><strong>${location && typeof location === "object" ? `${fmtNumber(locationLat, 4, "-")}, ${fmtNumber(locationLon, 4, "-")}` : "-"}</strong></article>
+          <article class="snapshot-item"><small>Deviation Score</small><strong>${fmtNumber(featureValueAny(features, ["deviation_score"], null), 3)}</strong></article>
+        `;
+
+        document.getElementById("event-scores-chips").innerHTML = `
+          <span class="chip">arrhythmia: ${fmtNumber(featureValueAny(features, ["arrhythmia_score", "arrhythmia"], null), 3)}</span>
+          <span class="chip">hypertension: ${fmtNumber(featureValueAny(features, ["hypertension_score", "hypertension"], null), 3)}</span>
+          <span class="chip">ischemia: ${fmtNumber(featureValueAny(features, ["ischemic_score", "ischemia_score", "ischemia"], null), 3)}</span>
+        `;
+
+        document.getElementById("event-baseline-chips").innerHTML = `
+          <span class="chip">HR baseline: ${fmtNumber(baseline.heart_rate, 2)}</span>
+          <span class="chip">HRV baseline: ${fmtNumber(baseline.hrv, 2)}</span>
+          <span class="chip">SpO2 baseline: ${fmtNumber(baseline.spo2, 2)}</span>
+          <span class="chip">Samples: ${baseline && (baseline.count !== undefined ? baseline.count : baseline.sample_count) !== undefined ? (baseline.count !== undefined ? baseline.count : baseline.sample_count) : "-"}</span>
+        `;
+
+        document.getElementById("event-metadata").textContent = JSON.stringify(metadata, null, 2);
+
+        setEventDialogOpen(true);
+      }
+
+      function setEventDialogOpen(isOpen) {
+        const backdrop = document.getElementById("event-dialog-backdrop");
+        if (!backdrop) {
+          return;
+        }
+
+        backdrop.hidden = !isOpen;
+        backdrop.classList.toggle("is-open", isOpen);
+        backdrop.setAttribute("aria-hidden", isOpen ? "false" : "true");
+        document.body.style.overflow = isOpen ? "hidden" : "";
+      }
+
+      function closeEventDialog() {
+        setEventDialogOpen(false);
+        document.getElementById("event-dialog-subtitle").textContent = "";
+        document.getElementById("event-snapshot-grid").innerHTML = "";
+        document.getElementById("event-scores-chips").innerHTML = "";
+        document.getElementById("event-baseline-chips").innerHTML = "";
+        document.getElementById("event-metadata").textContent = "";
+      }
+
+      function renderDetail(detail, status) {
+        const patient = detail.patient || {};
+        const latest = detail.latest_reading || {};
+        const baseline = detail.baseline_window || {};
+
+        document.getElementById("detail-title").textContent = `${patient.name || state.selectedUserId || "Unknown Patient"}`;
+        document.getElementById("detail-subtitle").textContent = `${patient.user_id || "-"} · Age ${patient.age ?? "-"} · Subscription ${patient.subscription_tier || "-"}`;
+
+        const statusNode = document.getElementById("detail-status");
+        statusNode.className = `status ${statusClass(status || "stable")}`;
+        statusNode.textContent = status || "stable";
+
+        document.getElementById("detail-chips").innerHTML = `
+          <span class="chip">Risk: ${escapeHtml(patient.risk_level || "unknown")}</span>
+          <span class="chip">Primary Condition: ${escapeHtml(patient.primary_condition || "unknown")}</span>
+          <span class="chip">Profile: ${escapeHtml(patient.profile_label || "n/a")}</span>
+          <span class="chip">Emergency Contact: ${escapeHtml(patient.emergency_contact || "n/a")}</span>
+        `;
+
+        document.getElementById("detail-metrics").innerHTML = `
+          <article class="detail-metric"><small>Heart Rate</small><strong>${fmtNumber(latest.heart_rate, 0)} bpm</strong></article>
+          <article class="detail-metric"><small>SpO2</small><strong>${fmtNumber(latest.spo2, 1)}%</strong></article>
+          <article class="detail-metric"><small>HRV</small><strong>${fmtNumber(latest.hrv, 1)}</strong></article>
+          <article class="detail-metric"><small>Model Confidence</small><strong>${fmtNumber(latest.confidence_score, 3)}</strong></article>
+          <article class="detail-metric"><small>15m Baseline HR</small><strong>${fmtNumber(baseline.baseline_heart_rate, 0)} bpm</strong></article>
+          <article class="detail-metric"><small>Last Reading</small><strong>${fmtDate(latest.recorded_at)}</strong></article>
+        `;
+
+        renderDistribution(detail.event_distribution_24h || []);
+        renderDetailTables(detail);
+      }
+
+      async function loadPatientDetail(userId, force = false) {
+        if (!userId) {
+          return;
+        }
+
+        const response = await fetch(`/api/doctor/patients/${encodeURIComponent(userId)}/detail?event_limit=12&alert_limit=12`, {
+          cache: "no-store",
+        });
+        const detail = await response.json();
+
+        if (!response.ok) {
+          throw new Error(detail.detail || "failed to load patient detail");
+        }
+
+        const patient = (state.overview?.patients || []).find((entry) => entry.user_id === userId);
+        const status = patient?.status || "stable";
+        renderDetail(detail, status);
+      }
+
+      async function refresh() {
+        clearError();
+
+        const overviewRes = await fetch("/api/doctor/overview?limit=300", { cache: "no-store" });
+        const overview = await overviewRes.json();
+
+        if (!overviewRes.ok) {
+          throw new Error("failed to load doctor overview");
+        }
+
+        state.overview = overview;
+
+        const availablePatients = overview.patients || [];
+        const selectedStillExists = availablePatients.some((entry) => entry.user_id === state.selectedUserId);
+
+        if (!state.selectedUserId || !selectedStillExists) {
+          const first = availablePatients.slice().sort((a, b) => statusRank(b.status) - statusRank(a.status))[0];
+          state.selectedUserId = first ? first.user_id : null;
+        }
+
+        renderMetrics(overview);
+        renderOverviewTable();
+
+        document.getElementById("overview-meta").textContent = `Last refresh: ${new Date().toLocaleTimeString()} · ${(overview.patients || []).length} patients`;
+
+        if (state.selectedUserId) {
+          await loadPatientDetail(state.selectedUserId, true);
+        }
+      }
+
+      document.getElementById("refresh").addEventListener("click", () => {
+        refresh().catch((error) => {
+          showError(error.message);
+        });
+      });
+
+      document.getElementById("patient-search").addEventListener("input", () => {
+        renderOverviewTable();
+      });
+
+      document.getElementById("status-filter").addEventListener("change", () => {
+        renderOverviewTable();
+      });
+
+      document.getElementById("event-dialog-close").addEventListener("click", () => {
+        closeEventDialog();
+      });
+
+      document.getElementById("event-dialog-backdrop").addEventListener("click", (event) => {
+        if (event.target.id === "event-dialog-backdrop") {
+          closeEventDialog();
+        }
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          closeEventDialog();
+        }
+      });
+
+      // Ensure dialog starts closed even if browser restores stale DOM state.
+      setEventDialogOpen(false);
+
+      refresh().catch((error) => {
+        showError(error.message);
+      });
+
+      setInterval(() => {
+        refresh().catch(() => {
+          // Keep background refresh soft-failing for uninterrupted demos.
+        });
+      }, REFRESH_MS);
+    </script>
+  </body>
+</html>
